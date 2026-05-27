@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func loadConfig(configPath string) map[string]string {
+func LoadConfig(configPath string) map[string]string {
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		log.Fatal(err)
@@ -24,7 +24,7 @@ func loadConfig(configPath string) map[string]string {
 	return config
 }
 
-func expandHomePath(path string) string {
+func ExpandHomePath(path string) string {
 	if strings.HasPrefix(path, "~") {
 		dirName, err := os.UserHomeDir()
 		if err == nil {

@@ -6,11 +6,19 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 )
 
-func detectFileType(filePath string) (string, error) {
+var allowedTypes = map[string][]string{
+	"image/jpeg":      {".jpg", ".jpeg"},
+	"image/png":       {".png"},
+	"application/pdf": {".pdf"},
+}
+
+func DetectFileType(filePath string) (string, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return "", err
@@ -31,6 +39,27 @@ func detectFileType(filePath string) (string, error) {
 	return http.DetectContentType(buf), nil
 }
 
+func CheckExtAndType(filePath string, contentType string) (bool, error) {
+	ext := strings.ToLower(filepath.Ext(filePath))
+
+	validExtensions, exist := allowedTypes[contentType]
+
+	if !exist {
+		return false, fmt.Errorf("file type %s not allowed", contentType)
+	}
+
+	isMatched := false
+
+	for _, v := range validExtensions {
+		if ext == v {
+			isMatched = true
+			break
+		}
+	}
+
+	return isMatched, nil
+}
+
 func tryExclusiveLock(filePath string) bool {
 	file, err := os.OpenFile(filePath, os.O_WRONLY, 0666)
 	if err != nil {
@@ -49,12 +78,12 @@ func tryExclusiveLock(filePath string) bool {
 	return true
 }
 
-func waitForFileLock(filePath string) bool {
+func WaitForFileLock(filePath string) bool {
 	maxRetry := 60
 
 	for i := 0; i < maxRetry; i++ {
 		if tryExclusiveLock(filePath) {
-			if checkFileSize(filePath) {
+			if CheckFileSize(filePath) {
 				return true
 			}
 		}
@@ -66,7 +95,7 @@ func waitForFileLock(filePath string) bool {
 	return false
 }
 
-func checkFileSize(filePath string) bool {
+func CheckFileSize(filePath string) bool {
 	initialStat, err := os.Stat(filePath)
 	if err != nil {
 		log.Fatal(err)

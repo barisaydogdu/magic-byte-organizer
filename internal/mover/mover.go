@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func moveFile(sourcePath, destPath string) {
+func MoveFile(sourcePath, destPath string) {
 	fileName := filepath.Base(sourcePath)
 
 	targetPath := filepath.Join(destPath, fileName)
