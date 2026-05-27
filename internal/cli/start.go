@@ -12,6 +12,7 @@ import (
 )
 
 var watchDir string
+var isDryRun bool
 
 var allowedTypes = map[string][]string{
 	"image/jpeg":      {".jpg", ".jpeg"},
@@ -56,8 +57,9 @@ var startCmd = &cobra.Command{
 								}
 
 								if !isMatch {
-									fmt.Println("File type not match")
-									return
+									//todo: burada raporlayabiliriz
+									//	fmt.Println("File type not match")
+									//	return
 								}
 
 								rawTargerDir, exist := configRules[fileType]
@@ -65,7 +67,12 @@ var startCmd = &cobra.Command{
 								if exist {
 									realTargetDir := config.ExpandHomePath(rawTargerDir)
 
-									mover.MoveFile(path, realTargetDir)
+									if isDryRun {
+										log.Printf("\033[33m[DRY RUN]\033[0m Simülasyon: '%s' dosyası '%s' klasörüne taşınacaktı.\n", path, realTargetDir)
+									} else {
+										mover.MoveFile(path, realTargetDir)
+									}
+
 								} else {
 									log.Printf("Kural bulunamadı, dosya atlandı: %s (Tür: %s)\n", path, fileType)
 								}
@@ -97,4 +104,6 @@ func init() {
 
 	//./magicsort start -d /tmp
 	startCmd.Flags().StringVarP(&watchDir, "dir", "-d", "/downloads", "The full path to the folder (source) to be monitored.")
+	startCmd.Flags().BoolVarP(&isDryRun, "dry-run", "", false, "")
+
 }
