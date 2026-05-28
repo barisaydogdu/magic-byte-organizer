@@ -1,6 +1,6 @@
 {
   "image/png": "~/Pictures",
-  "image/jpeg": "~/Picture",
+  "image/jpeg": "~/Pictures",
   "application/pdf": "~/Documents",
   "text/plain": "~/Desktop/Texts"
 }

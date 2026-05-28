@@ -151,6 +151,6 @@ func init() {
 	rootCmd.AddCommand(startCmd)
 
 	startCmd.Flags().StringVarP(&watchDir, "dir", "d", "../home/baris/downloads", "The full path to the folder (source) to be monitored.")
-	startCmd.Flags().BoolVarP(&isDryRun, "dry-run", "", false, "")
-	startCmd.Flags().StringVarP(&delayStr, "delay", "", "0s", "")
+	startCmd.Flags().BoolVarP(&isDryRun, "dry-run", "", false, "Runs a simulation of a file transfer scenario without making any changes to the disk.")
+	startCmd.Flags().StringVarP(&delayStr, "delay", "t", "0s", "Wait time before moving the file (e.g., '10m', '30s', '1h'). Default is 0s.")
 }

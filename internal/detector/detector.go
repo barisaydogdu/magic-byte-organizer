@@ -28,13 +28,11 @@ func DetectFileType(filePath string) (string, error) {
 
 	buf := make([]byte, 512)
 
-	n, err := file.Read(buf)
+	_, err = file.Read(buf)
 	if err != nil && err != io.EOF {
 		return "", err
 	}
-
-	log.Printf("Read %d bytes: %x\n", n, buf[:n])
-
+	
 	return http.DetectContentType(buf), nil
 }
 
