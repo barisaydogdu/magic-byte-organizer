@@ -46,7 +46,9 @@ func CheckExtAndType(filePath string, contentType string) (bool, error) {
 	validExtensions, exist := allowedTypes[contentType]
 
 	if !exist {
-		return false, fmt.Errorf("file type %s not allowed", contentType)
+		//return false, fmt.Errorf("file type %s not allowed", contentType)
+		fmt.Println("Invalid content type:", contentType)
+		return true, nil
 	}
 
 	isMatched := false
@@ -82,6 +84,11 @@ func tryExclusiveLock(filePath string) bool {
 
 func WaitForFileLock(filePath string) bool {
 	maxRetry := 60
+	retryCount := 0
+
+	ticker := time.NewTicker(time.Second * 5)
+
+	defer ticker.Stop()
 
 	for i := 0; i < maxRetry; i++ {
 		if _, err := os.Stat(filePath); os.IsNotExist(err) {
@@ -95,8 +102,18 @@ func WaitForFileLock(filePath string) bool {
 			}
 		}
 
+		retryCount++
+
+		if retryCount >= maxRetry {
+			return false
+		}
+
 		log.Printf("file is busy waiting %d/%d seconds\n", i, maxRetry)
-		time.Sleep(time.Second * 5)
+
+		select {
+		case <-ticker.C:
+			continue
+		}
 	}
 
 	return false

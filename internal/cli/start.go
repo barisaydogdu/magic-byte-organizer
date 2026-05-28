@@ -28,6 +28,7 @@ var startCmd = &cobra.Command{
 		defer watcher.Close()
 
 		configRules := config.LoadConfig("config.json")
+
 		go func() {
 			for {
 				select {
@@ -35,7 +36,7 @@ var startCmd = &cobra.Command{
 					if !ok {
 						return
 					}
-					if event.Has(fsnotify.Create) {
+					if event.Has(fsnotify.Create) || event.Has(fsnotify.Rename) {
 						go func(path string) {
 							fileName := filepath.Base(path)
 
