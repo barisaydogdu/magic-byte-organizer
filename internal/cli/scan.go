@@ -19,7 +19,12 @@ var scanCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Printf("Scanning is starting: %s\n", watchDir)
 
-		configRules := config.LoadConfig("config.json")
+		absPath := config.GetAbsoluteConfigPath()
+		configRules, err := config.LoadConfig(absPath)
+		if err != nil {
+			log.Println("cannot load config", err)
+			return
+		}
 
 		entries, err := os.ReadDir(watchDir)
 		if err != nil {
@@ -40,13 +45,13 @@ var scanCmd = &cobra.Command{
 
 			fileType, err := detector.DetectFileType(path)
 			if err != nil {
-				fmt.Println(err)
+				log.Println(err)
 				return
 			}
 
 			isMatch, err := detector.CheckExtAndType(path, fileType)
 			if err != nil {
-				fmt.Println(err)
+				log.Println(err)
 				return
 			}
 
@@ -66,7 +71,7 @@ var scanCmd = &cobra.Command{
 				} else {
 					err := mover.MoveFile(path, realTargetDir)
 					if err != nil {
-						fmt.Println(err)
+						log.Println(err)
 						return
 					}
 				}

@@ -1,6 +1,6 @@
 {
-  "image/png": "~/Resimler",
-  "image/jpeg": "~/Resimler",
-  "application/pdf": "~/Belgeler",
-  "text/plain": "~/Masaustu/Metinler"
+  "image/png": "~/Pictures",
+  "image/jpeg": "~/Picture",
+  "application/pdf": "~/Documents",
+  "text/plain": "~/Desktop/Texts"
 }

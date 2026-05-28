@@ -1,7 +1,6 @@
 package detector
 
 import (
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -16,6 +15,7 @@ var allowedTypes = map[string][]string{
 	"image/jpeg":      {".jpg", ".jpeg"},
 	"image/png":       {".png"},
 	"application/pdf": {".pdf"},
+	"text/plain":      {".txt", ".csv"},
 }
 
 func DetectFileType(filePath string) (string, error) {
@@ -23,8 +23,6 @@ func DetectFileType(filePath string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
-	fmt.Println("file.FD", file.Fd())
 
 	defer file.Close()
 
@@ -35,7 +33,7 @@ func DetectFileType(filePath string) (string, error) {
 		return "", err
 	}
 
-	fmt.Printf("Read %d bytes: %x\n", n, buf[:n])
+	log.Printf("Read %d bytes: %x\n", n, buf[:n])
 
 	return http.DetectContentType(buf), nil
 }
@@ -47,7 +45,7 @@ func CheckExtAndType(filePath string, contentType string) (bool, error) {
 
 	if !exist {
 		//return false, fmt.Errorf("file type %s not allowed", contentType)
-		fmt.Println("Invalid content type:", contentType)
+		log.Println("Invalid content type:", contentType)
 		return true, nil
 	}
 
@@ -66,7 +64,7 @@ func CheckExtAndType(filePath string, contentType string) (bool, error) {
 func tryExclusiveLock(filePath string) bool {
 	file, err := os.OpenFile(filePath, os.O_WRONLY, 0666)
 	if err != nil {
-		fmt.Println("open file error", err)
+		log.Println("open file error", err)
 		return false
 	}
 
@@ -92,7 +90,7 @@ func WaitForFileLock(filePath string) bool {
 
 	for i := 0; i < maxRetry; i++ {
 		if _, err := os.Stat(filePath); os.IsNotExist(err) {
-			log.Println("file does not exist")
+			log.Println("File does not exist")
 			return false
 		}
 
@@ -108,7 +106,7 @@ func WaitForFileLock(filePath string) bool {
 			return false
 		}
 
-		log.Printf("file is busy waiting %d/%d seconds\n", i, maxRetry)
+		log.Printf("File is busy waiting %d/%d seconds\n", i, maxRetry)
 
 		select {
 		case <-ticker.C:
@@ -139,10 +137,10 @@ func CheckFileSize(filePath string) bool {
 	finalSize := finalStat.Size()
 
 	if initialSize == finalSize {
-		log.Printf("file size is fixed: %d bytes", finalSize)
+		log.Printf("File size is fixed: %d bytes", finalSize)
 		return true
 	}
 
-	log.Printf("Dosya büyüyor: %d -> %d byte\n", initialSize, finalSize)
+	log.Printf("File is growing: %d -> %d byte\n", initialSize, finalSize)
 	return false
 }

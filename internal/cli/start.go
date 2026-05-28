@@ -1,10 +1,14 @@
 package cli
 
 import (
-	"fmt"
+	"context"
 	"log"
+	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
+	"time"
 
 	"github.com/barisaydogdu/magic-byte-organizer/internal/config"
 	"github.com/barisaydogdu/magic-byte-organizer/internal/detector"
@@ -15,19 +19,36 @@ import (
 
 var watchDir string
 var isDryRun bool
+var delayStr string
 
 var startCmd = &cobra.Command{
 	Use:   "start",
 	Short: "It starts the file monitoring service.",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("MagicSort tracking service is launching...")
+		ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+
+		defer cancel()
+		parsedDelay, err := time.ParseDuration(delayStr)
+		if err != nil {
+			log.Println("cannot parsed delaystr", err)
+			return
+		}
+
+		log.Println("MagicSort tracking service is launching...")
+
 		watcher, err := fsnotify.NewWatcher()
 		if err != nil {
-			log.Fatal(err)
+			log.Println("cannot create watcher", err)
+			return
 		}
 		defer watcher.Close()
 
-		configRules := config.LoadConfig("config.json")
+		absConfigPath := config.GetAbsoluteConfigPath()
+		configRules, err := config.LoadConfig(absConfigPath)
+		if err != nil {
+			log.Println("cannot load config", err)
+			return
+		}
 
 		go func() {
 			for {
@@ -75,10 +96,27 @@ var startCmd = &cobra.Command{
 									if isDryRun {
 										log.Printf("\033[33m[DRY RUN]\033[0m Simülasyon: '%s' dosyası '%s' klasörüne taşınacaktı.\n", path, realTargetDir)
 									} else {
-										err := mover.MoveFile(path, realTargetDir)
+										if parsedDelay > 0 {
+											select {
+											case <-time.After(parsedDelay):
+												log.Println("parsed delay done")
+											case <-ctx.Done():
+												return
+											}
+
+											_, err := os.Stat(path)
+											if err != nil {
+												if os.IsNotExist(err) {
+													return
+												}
+											}
+										}
+
+										err = mover.MoveFile(path, realTargetDir)
 										if err != nil {
 											return
 										}
+
 									}
 
 								} else {
@@ -100,18 +138,19 @@ var startCmd = &cobra.Command{
 		}()
 		err = watcher.Add(watchDir)
 		if err != nil {
-			log.Fatal(err)
+			log.Println("cannot add watcher", err)
+			return
 		}
 
-		<-make(chan struct{})
+		<-ctx.Done()
+
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(startCmd)
 
-	//./magicsort start -d /tmp
 	startCmd.Flags().StringVarP(&watchDir, "dir", "d", "../home/baris/downloads", "The full path to the folder (source) to be monitored.")
 	startCmd.Flags().BoolVarP(&isDryRun, "dry-run", "", false, "")
-
+	startCmd.Flags().StringVarP(&delayStr, "delay", "", "0s", "")
 }
