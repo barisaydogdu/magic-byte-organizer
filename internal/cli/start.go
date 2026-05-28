@@ -3,6 +3,8 @@ package cli
 import (
 	"fmt"
 	"log"
+	"path/filepath"
+	"strings"
 
 	"github.com/barisaydogdu/magic-byte-organizer/internal/config"
 	"github.com/barisaydogdu/magic-byte-organizer/internal/detector"
@@ -13,12 +15,6 @@ import (
 
 var watchDir string
 var isDryRun bool
-
-var allowedTypes = map[string][]string{
-	"image/jpeg":      {".jpg", ".jpeg"},
-	"image/png":       {".png"},
-	"application/pdf": {".pdf"},
-}
 
 var startCmd = &cobra.Command{
 	Use:   "start",
@@ -41,6 +37,14 @@ var startCmd = &cobra.Command{
 					}
 					if event.Has(fsnotify.Create) {
 						go func(path string) {
+							fileName := filepath.Base(path)
+
+							if strings.HasSuffix(fileName, ".md") || strings.HasSuffix(fileName, ".crdownload") ||
+								strings.HasSuffix(fileName, ".part") || strings.HasSuffix(fileName, ".part") || strings.HasPrefix(fileName, ".") {
+
+								return
+							}
+
 							if detector.WaitForFileLock(path) {
 								fileType, err := detector.DetectFileType(path)
 								if err != nil {
@@ -70,7 +74,10 @@ var startCmd = &cobra.Command{
 									if isDryRun {
 										log.Printf("\033[33m[DRY RUN]\033[0m Simülasyon: '%s' dosyası '%s' klasörüne taşınacaktı.\n", path, realTargetDir)
 									} else {
-										mover.MoveFile(path, realTargetDir)
+										err := mover.MoveFile(path, realTargetDir)
+										if err != nil {
+											return
+										}
 									}
 
 								} else {
@@ -103,7 +110,7 @@ func init() {
 	rootCmd.AddCommand(startCmd)
 
 	//./magicsort start -d /tmp
-	startCmd.Flags().StringVarP(&watchDir, "dir", "-d", "/downloads", "The full path to the folder (source) to be monitored.")
+	startCmd.Flags().StringVarP(&watchDir, "dir", "d", "../home/baris/downloads", "The full path to the folder (source) to be monitored.")
 	startCmd.Flags().BoolVarP(&isDryRun, "dry-run", "", false, "")
 
 }

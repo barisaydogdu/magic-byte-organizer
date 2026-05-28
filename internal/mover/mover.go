@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func MoveFile(sourcePath, destPath string) {
+func MoveFile(sourcePath, destPath string) error {
 	fileName := filepath.Base(sourcePath)
 
 	targetPath := filepath.Join(destPath, fileName)
@@ -25,8 +25,14 @@ func MoveFile(sourcePath, destPath string) {
 
 	err := os.Rename(sourcePath, targetPath)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+
 		log.Printf("error cannot move (%s): %v\n", sourcePath, err)
-		return
+		return err
 	}
 	log.Printf("Succeess: %s -> %s moved folder.\n", fileName, destPath)
+
+	return nil
 }

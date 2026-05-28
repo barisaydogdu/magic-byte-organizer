@@ -31,10 +31,11 @@ func DetectFileType(filePath string) (string, error) {
 	buf := make([]byte, 512)
 
 	n, err := file.Read(buf)
-	if err != io.EOF {
+	if err != nil && err != io.EOF {
 		return "", err
 	}
-	fmt.Printf("Read %d bytes: %x\n", n, buf[n:])
+
+	fmt.Printf("Read %d bytes: %x\n", n, buf[:n])
 
 	return http.DetectContentType(buf), nil
 }
@@ -63,6 +64,7 @@ func CheckExtAndType(filePath string, contentType string) (bool, error) {
 func tryExclusiveLock(filePath string) bool {
 	file, err := os.OpenFile(filePath, os.O_WRONLY, 0666)
 	if err != nil {
+		fmt.Println("open file error", err)
 		return false
 	}
 
@@ -82,14 +84,19 @@ func WaitForFileLock(filePath string) bool {
 	maxRetry := 60
 
 	for i := 0; i < maxRetry; i++ {
+		if _, err := os.Stat(filePath); os.IsNotExist(err) {
+			log.Println("file does not exist")
+			return false
+		}
+
 		if tryExclusiveLock(filePath) {
 			if CheckFileSize(filePath) {
 				return true
 			}
 		}
 
-		log.Printf("file is busy waiting %i/%d seconds\n", i, maxRetry)
-		time.Sleep(time.Second * 2)
+		log.Printf("file is busy waiting %d/%d seconds\n", i, maxRetry)
+		time.Sleep(time.Second * 5)
 	}
 
 	return false
@@ -98,16 +105,18 @@ func WaitForFileLock(filePath string) bool {
 func CheckFileSize(filePath string) bool {
 	initialStat, err := os.Stat(filePath)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("File size check error: %s\n", err)
+		return false
 	}
 
 	initialSize := initialStat.Size()
 
-	time.Sleep(2 * time.Second)
+	time.Sleep(6 * time.Second)
 
 	finalStat, err := os.Stat(filePath)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("File size check error: %s\n", err)
+		return false
 	}
 
 	finalSize := finalStat.Size()
